@@ -56,4 +56,6 @@ include("algorithms/ga.jl")
 include("algorithms/ea.jl")
 include("algorithms/swarm.jl")
 
+include("island.jl")
+
 end

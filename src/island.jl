@@ -30,7 +30,7 @@ Returns the indices of the S_M.`k`-worst individuals in the population.
 """
 
 function select(S_M::WorstDemeSelector, y)
-    worst = partialsortperm(y, S_M.k; rev=true)
+    worst = partialsortperm(y, 1:S_M.k; rev=true)
     return sort(worst)
 end
 
@@ -73,15 +73,15 @@ function strand(S_M::DemeSelector, d, src; comm=MPI.COMM_WORLD)
 end
 
 """
-    reinsert!(population, y, M)
+    reinsert!(population, y, R_M::DemeSelector, M)
 
-Insert deme `M` into `population`.
+Insert deme `M` into `population` and returns selected individuals' indices for removal.
+Selection is performed using policy determined by `R_M`.
 """
-function reinsert!(population, y, R_M::WorstDemeSelector, M)
-    #find worst
-    worst = select(R_M, y)
+function reinsert!(population, y, R_M::DemeSelector, M)
+    replaced = select(R_M, y)  # get indices
     append!(population, M)
-    return worst
+    return replaced
 end
 
 
@@ -92,12 +92,15 @@ function islandGA(
     f::Function,
     pop::AbstractVector,
     max_it::Integer,
-    S_P::IdunIslands.TournamentSelectionGenerational,
+    S_P::IdunIslands.SelectionMethod,
     X::IdunIslands.CrossoverMethod,
     Mut::IdunIslands.MutationMethod,
     μ::Integer,
     S_M::IdunIslands.DemeSelector,
-    R_M::IdunIslands.DemeSelector
+    R_M::IdunIslands.DemeSelector,
+    dest::Integer,
+    src::Integer,
+    comm
 )
     n = length(pop)
     d = length(pop[1])
@@ -112,7 +115,7 @@ function islandGA(
         if i % μ == 0  # migration time
             # Migration
             # 1. Select and send deme
-            _, s_req = IdunIslands.drift(S_M, pop, y, dest; comm=MPI.COMM_WORLD)
+            _, s_req = IdunIslands.drift(S_M, pop, fitnesses, dest; comm=MPI.COMM_WORLD)
             # 3. Receive deme
             M, r_req = IdunIslands.strand(S_M, d, src; comm=MPI.COMM_WORLD)
             # WAIT

@@ -31,7 +31,7 @@ Returns the indices of the S_M.`k`-worst individuals in the population.
 
 function select(S_M::WorstDemeSelector, y)
     worst = partialsortperm(y, S_M.k; rev=true)
-    return worst
+    return sort(worst)
 end
 
 
@@ -43,9 +43,11 @@ end
 Removes chosen indices from the population and sends it to adjacent island.
 Returns the send request of MPI.
 """
-function drift!(population, chosen, dest; comm=MPI.COMM_WORLD)
-    M = Vector{Vector{Float64}}(undef, length(chosen))
-    for i in 1:length(chosen)
+function drift(S_M::DemeSelector, population, y, dest; comm=MPI.COMM_WORLD)
+    M = Vector{Vector{Float64}}(undef, S_M.k)
+    #select here
+    chosen = select(S_M, y)
+    for i in eachindex(chosen)
         M[i] = population[chosen[i]]
     end
     encoded_M = reduce(vcat, M)
@@ -59,9 +61,9 @@ end
 
 Adds received deme into the population. Returns the received request of MPI.
 """
-function strand!(population, k, d, src; comm=MPI.COMM_WORLD)
+function strand(S_M::DemeSelector, d, src; comm=MPI.COMM_WORLD)
     #MPI RECEIVE FROM SOURCE
-    encoded_M = Array{Float64}(undef, k * d)
+    encoded_M = Array{Float64}(undef, S_M.k * d)
     r_req = MPI.Irecv!(encoded_M, comm; source=src)  # Should I use tag?
     M = []
     for i in 1:d:length(encoded_M)
@@ -70,29 +72,66 @@ function strand!(population, k, d, src; comm=MPI.COMM_WORLD)
     return M, r_req
 end
 
-
-# Deme replacers:
-
-abstract type DemeReplacer end
-
 """
-Replaces worst individuals with an individual probability `p` of success.
+    reinsert!(population, y, M)
+
+Insert deme `M` into `population`.
 """
-struct WorstReplacer <: DemeReplacer
-    p
+function reinsert!(population, y, R_M::WorstDemeSelector, M)
+    #find worst
+    worst = select(R_M, y)
+    append!(population, M)
+    return worst
 end
 
-"""
-    reinsert!(population, y, R::WorstReplacer, M)
 
-Insert deme `M` into `population` by replacing the worst individuals
-"""
-function reinsert!(population, y, R::WorstReplacer, M)
-    #find worst
-    k = length(M)
-    worst = partialsortperm(y, 1:k; rev=true)
-    for i in 1:k
-        push!(population, M[i])
-    end
-    return sort(worst)
+# Island GA
+
+function islandGA(
+    logbook::Logbook,
+    f::Function,
+    pop::AbstractVector,
+    max_it::Integer,
+    S_P::IdunIslands.TournamentSelectionGenerational,
+    X::IdunIslands.CrossoverMethod,
+    Mut::IdunIslands.MutationMethod,
+    μ::Integer,
+    S_M::IdunIslands.DemeSelector,
+    R_M::IdunIslands.DemeSelector
+)
+    n = length(pop)
+    d = length(pop[1])
+    comm_stats = []
+	for i in 1:max_it  # main loop
+		parents = select(S_P, f.(pop)) # O(max_it * n)
+		offspring = [cross(X, pop[p[1]], pop[p[2]]) for p in parents]
+		pop .= mutate.(Ref(Mut), offspring) # whole population is replaced
+
+        fitnesses = f.(pop) # O(max_it * n)
+
+        if i % μ == 0  # migration time
+            # Migration
+            # 1. Select and send deme
+            _, s_req = IdunIslands.drift(S_M, pop, y, dest; comm=MPI.COMM_WORLD)
+            # 3. Receive deme
+            M, r_req = IdunIslands.strand(S_M, d, src; comm=MPI.COMM_WORLD)
+            # WAIT
+            MPI.Barrier(comm)
+            # 4. Add new deme
+            worst = IdunIslands.reinsert!(pop, fitnesses, R_M, M)
+            # 5. Delete old deme
+            deleteat!(pop, worst)
+            deleteat!(fitnesses, worst)
+            # 5. Evaluate new deme
+            append!(fitnesses, f.(M))  # O(max_it / μ * S_M.k)
+            push!(comm_stats, MPI.Waitall([r_req, s_req]))
+        end
+        compute!(logbook, fitnesses)  # Save stats
+	end
+
+    # x, fx
+	best, best_i = findmin(f, pop) # O(n)  #  this is not efficient, I know
+	n_evals = 2 * max_it * n + n
+    result = Result(best, pop[best_i], pop, max_it, n_evals)
+	return result, comm_stats  # of this island!
 end

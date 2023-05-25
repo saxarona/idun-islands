@@ -5,21 +5,22 @@
 abstract type DemeSelector end
 
 struct RandomDemeSelector <: DemeSelector
-    k
+    k::Integer
 end
 
 struct WorstDemeSelector <: DemeSelector
-    k
+    k::Integer
 end
 
 
 """
-    select(S_M::RandomDemeSelector, y; rng=GLOBAL_RNG)
+    select(S_M::RandomDemeSelector, y)
 
 Returns a random subset of `S_M.k` indices from the population.
 """
-function select(S_M::RandomDemeSelector, y; rng=GLOBAL_RNG)
-    return sample(1:length(y), S_M.k, replace=false)
+function select(S_M::RandomDemeSelector, y)
+    n = length(y)
+    return sample(1:n, S_M.k, replace=false, ordered=true)
 end
 
 """
@@ -43,9 +44,13 @@ Removes chosen indices from the population and sends it to adjacent island.
 Returns the send request of MPI.
 """
 function drift!(population, chosen, dest; comm=MPI.COMM_WORLD)
-    M = splice!(population, chosen)
+    M = Vector{Vector{Float64}}(undef, length(chosen))
+    for i in 1:length(chosen)
+        M[i] = population[chosen[i]]
+    end
+    encoded_M = reduce(vcat, M)
     #MPI SEND TO DESTINATION
-    s_req = MPI.Isend(M, comm; dest=dest)  # Should I use tag?
+    s_req = MPI.Isend(encoded_M, comm; dest=dest)  # Should I use tag?
     return M, s_req
 end
 
@@ -54,10 +59,14 @@ end
 
 Adds received deme into the population. Returns the received request of MPI.
 """
-function strand!(population, k, src; comm=MPI.COMM_WORLD)
+function strand!(population, k, d, src; comm=MPI.COMM_WORLD)
     #MPI RECEIVE FROM SOURCE
-    M = similar(population, k)
-    r_req = MPI.Irecv!(M, comm; source=src)  # Should I use tag?
+    encoded_M = Array{Float64}(undef, k * d)
+    r_req = MPI.Irecv!(encoded_M, comm; source=src)  # Should I use tag?
+    M = []
+    for i in 1:d:length(encoded_M)
+        push!(M, encoded_M[i:i+d-1])
+    end
     return M, r_req
 end
 
@@ -74,21 +83,16 @@ struct WorstReplacer <: DemeReplacer
 end
 
 """
-    reinsert!(population, y, R::WorstReplacer, M; rng=GLOBAL_RNG)
+    reinsert!(population, y, R::WorstReplacer, M)
 
-Insert deme `M` into `population` by replacing the worst individuals, with a probability
-`R.p` of success.
+Insert deme `M` into `population` by replacing the worst individuals
 """
-function reinsert!(population, y, R::WorstReplacer, M; rng=GLOBAL_RNG)
+function reinsert!(population, y, R::WorstReplacer, M)
     #find worst
     k = length(M)
-    worst = partialsortperm(y, k; rev=true)
+    worst = partialsortperm(y, 1:k; rev=true)
     for i in 1:k
-        if rand() < R.p
-            deleteat!(population, worst[i])
-            deleteat!(y, worst[i])
-            push!(population, M[i])
-        end
+        push!(population, M[i])
     end
-    return
+    return sort(worst)
 end

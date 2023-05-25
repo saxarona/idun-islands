@@ -6,6 +6,7 @@ import OrderedCollections: LittleDict
 import StatsBase: ordinalrank, sample
 
 using Distributions
+using MPI
 using Random
 using Statistics
 

@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 #SBATCH -J julia-mpi-test
 #SBATCH --account=share-ie-idi
-#SBATCH -N 2                        # 1 node for the job
-#SBATCH --ntasks-per-node=4         # 4 tasks per cpu
+#SBATCH -N 2                        # 2 nodes for the job
+#SBATCH --ntasks-per-node=4         # 4 cores per node
 #SBATCH -c 1                        # single threaded
-#SBATCH -t 00:10:00                 # time
+#SBATCH -t 00:10:00                 # max time
 #SBATCH -p CPUQ                     # partition
 #SBATCH --output=out/test_%j.out    # output dump
 

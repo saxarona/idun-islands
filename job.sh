@@ -1,10 +1,10 @@
 #!/usr/bin/bash
 #SBATCH -J julia-mpi-test
 #SBATCH --account=share-ie-idi
-#SBATCH -N 2                        # 1 node for the job
+#SBATCH -N 1                        # 1 node for the job
 #SBATCH --ntasks-per-node=4         # 4 tasks per cpu
 #SBATCH -c 1                        # single threaded
-#SBATCH -t 00:10:00                 # time
+#SBATCH -t 00:05:00                 # time
 #SBATCH -p CPUQ                     # partition
 #SBATCH --output=out/test_%j.out    # output dump
 
@@ -15,4 +15,4 @@ WORKDIR=${SLURM_SUBMIT_DIR}
 
 cd ${WORKDIR}
 # srun julia archipelago.jl
-srun julia scratch.jl
+srun julia archipelago.jl

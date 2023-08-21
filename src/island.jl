@@ -38,7 +38,7 @@ end
 # Communication blocks
 
 """
-    drift!(population, chosen, dest; comm=MPI.COMM_WORLD)
+    drift(population, chosen, dest; comm=MPI.COMM_WORLD)
 
 Removes chosen indices from the population and sends it to adjacent island.
 Returns the send request of MPI.
@@ -46,7 +46,7 @@ Returns the send request of MPI.
 function drift(S_M::DemeSelector, population, y, dest; comm=MPI.COMM_WORLD)
     M = Vector{Vector{Float64}}(undef, S_M.k)
     #select here
-    chosen = select(S_M, y)
+    chosen = Islands.select(S_M, y)
     for i in eachindex(chosen)
         M[i] = population[chosen[i]]
     end
@@ -79,7 +79,7 @@ Insert deme `M` into `population` and returns selected individuals' indices for 
 Selection is performed using policy determined by `R_M`.
 """
 function reinsert!(population, y, R_M::DemeSelector, M)
-    replaced = select(R_M, y)  # get indices
+    replaced = Islands.select(R_M, y)  # get indices
     append!(population, M)
     return replaced
 end
@@ -92,12 +92,12 @@ function islandGA(
     f::Function,
     pop::AbstractVector,
     max_it::Integer,
-    S_P::IdunIslands.SelectionMethod,
-    X::IdunIslands.CrossoverMethod,
-    Mut::IdunIslands.MutationMethod,
+    S_P::EvoLP.SelectionMethod,
+    X::EvoLP.CrossoverMethod,
+    Mut::EvoLP.MutationMethod,
     μ::Integer,
-    S_M::IdunIslands.DemeSelector,
-    R_M::IdunIslands.DemeSelector,
+    S_M::Islands.DemeSelector,
+    R_M::Islands.DemeSelector,
     dest::Integer,
     src::Integer,
     comm
@@ -106,7 +106,7 @@ function islandGA(
     d = length(pop[1])
     comm_stats = []
 	for i in 1:max_it  # main loop
-		parents = select(S_P, f.(pop)) # O(max_it * n)
+		parents = EvoLP.select(S_P, f.(pop)) # O(max_it * n)
 		offspring = [cross(X, pop[p[1]], pop[p[2]]) for p in parents]
 		pop .= mutate.(Ref(Mut), offspring) # whole population is replaced
 
@@ -115,13 +115,13 @@ function islandGA(
         if i % μ == 0  # migration time
             # Migration
             # 1. Select and send deme
-            _, s_req = IdunIslands.drift(S_M, pop, fitnesses, dest; comm=MPI.COMM_WORLD)
+            _, s_req = drift(S_M, pop, fitnesses, dest; comm=MPI.COMM_WORLD)
             # 3. Receive deme
-            M, r_req = IdunIslands.strand(S_M, d, src; comm=MPI.COMM_WORLD)
+            M, r_req = strand(S_M, d, src; comm=MPI.COMM_WORLD)
             # WAIT
             MPI.Barrier(comm)
             # 4. Add new deme
-            worst = IdunIslands.reinsert!(pop, fitnesses, R_M, M)
+            worst = reinsert!(pop, fitnesses, R_M, M)
             # 5. Delete old deme
             deleteat!(pop, worst)
             deleteat!(fitnesses, worst)

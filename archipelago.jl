@@ -1,5 +1,6 @@
 using CSV
-using IdunIslands
+using EvoLP
+using Islands
 using MPI
 using OrderedCollections
 using Statistics
@@ -30,8 +31,8 @@ max_it = 100  # max iterations of optimiser
 
 ## Island operators
 k = 0.1*n  # deme size
-S_M = IdunIslands.RandomDemeSelector(k)  # migration selection policy
-R_M = IdunIslands.WorstDemeSelector(k)  # migration replacement policy
+S_M = RandomDemeSelector(k)  # migration selection policy
+R_M = WorstDemeSelector(k)  # migration replacement policy
 μ = 10
 
 # Extras
@@ -41,7 +42,7 @@ thedict = LittleDict(statnames, fns)
 statsbook = Logbook(thedict)
 
 # call to optimiser
-i_res, i_stats = IdunIslands.islandGA(
+i_res, i_stats = islandGA(
     statsbook, f, P, max_it, S_P, X, Mut,
     μ, S_M, R_M, dest, src, comm
 )

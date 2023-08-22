@@ -2,9 +2,9 @@
 #SBATCH -J julia-mpi-test
 #SBATCH --account=share-ie-idi
 #SBATCH -N 1                        # 1 node for the job
-#SBATCH --ntasks-per-node=4         # 4 tasks per cpu
+#SBATCH --ntasks-per-node=32         # 4 tasks per cpu
 #SBATCH -c 1                        # single threaded
-#SBATCH -t 00:05:00                 # time
+#SBATCH -t 00:15:00                 # time
 #SBATCH -p CPUQ                     # partition
 #SBATCH --output=out/test_%j.out    # output dump
 

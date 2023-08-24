@@ -16,7 +16,7 @@ dest = mod(myrank+1, ranks)
 src = mod(myrank-1, ranks)
 
 # 1. Init
-ds = [2, 3, 5]  # dimensions
+ds = [2, 3, 5, 10]  # dimensions
 fs = [ackley, rosenbrock, michalewicz]  # objective functions
 bounds = [(-32.768, 32.768), (-2.048, 2.048), (0, π)]
 mus = [5, 5, 10]  # migration rates
@@ -26,7 +26,7 @@ n = 30  # population size
 S_P = RankBasedSelectionGenerational()  # parent selection policy
 X = UniformCrossover()  # crossover method
 Mut = GaussianMutation(0.1)  # mutation method
-max_it = 100  # max iterations of optimiser
+max_it = 200  # max iterations of optimiser
 
 ## Island operators
 k = 0.1*n  # deme size

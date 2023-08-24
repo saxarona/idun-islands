@@ -119,7 +119,7 @@ function islandGA(
             # 3. Receive deme
             M, r_req = strand(S_M, d, src; comm=MPI.COMM_WORLD)
             # WAIT
-            MPI.Barrier(comm)
+            # MPI.Barrier(comm)
             # 4. Add new deme
             worst = reinsert!(pop, fitnesses, R_M, M)
             # 5. Delete old deme
@@ -127,7 +127,8 @@ function islandGA(
             deleteat!(fitnesses, worst)
             # 5. Evaluate new deme
             append!(fitnesses, f.(M))  # O(max_it / μ * S_M.k)
-            push!(comm_stats, MPI.Waitall([r_req, s_req]))
+            # push!(comm_stats, MPI.Waitall([r_req, s_req]))
+            MPI.Barrier(comm)
         end
         compute!(logbook, fitnesses)  # Save stats
 	end

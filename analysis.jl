@@ -16,7 +16,7 @@ for eachf in fs
         d = []
         dfs = []
         # read eachfile
-        for i in 1:8
+        for i in 1:32
             push!(dfs, CSV.read("$(path)$(eachf)/$(eachdir)/data_$(i-1).csv", DataFrame))
             df = filter(row -> all(x -> !(x isa Number && isnan(x)), row), dfs[i])
             push!(d, minimum(skipmissing(df.min)))

@@ -1,5 +1,4 @@
 # A short script to get the minimum value of each of the test functions
-# We remove NaNs which appeared in some of the calculations using d=3
 
 using CSV
 using DataFrames
@@ -19,7 +18,7 @@ for eachf in fs
         for i in 1:32
             push!(dfs, CSV.read("$(path)$(eachf)/$(eachdir)/data_$(i-1).csv", DataFrame))
             df = filter(row -> all(x -> !(x isa Number && isnan(x)), row), dfs[i])
-            push!(d, minimum(skipmissing(df.min)))
+            push!(d, minimum(skipmissing(df.minimum)))
         end
         push!(cols, d)
     end

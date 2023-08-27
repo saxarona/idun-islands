@@ -6,6 +6,8 @@ using OrderedCollections
 using Statistics
 import DataFrames: DataFrame
 
+const SAVE = true
+
 MPI.Init()
 
 comm = MPI.COMM_WORLD
@@ -26,7 +28,7 @@ n = 30  # population size
 S_P = RankBasedSelectionGenerational()  # parent selection policy
 X = UniformCrossover()  # crossover method
 Mut = GaussianMutation(0.1)  # mutation method
-max_it = 200  # max iterations of optimiser
+max_it = 100  # max iterations of optimiser
 
 ## Island operators
 k = 0.1*n  # deme size
@@ -34,8 +36,8 @@ S_M = RandomDemeSelector(k)  # migration selection policy
 R_M = WorstDemeSelector(k)  # migration replacement policy
 
 # Extras
-statnames = ["max", "min", "avg", "median"]
-statfs = [maximum, minimum, mean, median]
+statfs = [minimum, maximum, mean, median, std]
+statnames = [string(x) for x in statfs]
 
 for (exp_i, f) in enumerate(fs)  # for each experiment/objective function
     fname = string(f)
@@ -57,11 +59,12 @@ for (exp_i, f) in enumerate(fs)  # for each experiment/objective function
         )
         # print("Comm stats for this island:\n $i_stats\n")
         print("""Result on island $(myrank) for $(f) function with d=$(d):
-                 $(optimum(i_res))
-                 achieved by $(optimizer(i_res))\n""")
+                $(optimum(i_res))
+                achieved by $(optimizer(i_res))\n""")
         df = DataFrame(statsbook.records)
-        CSV.write("./data/$(fname)/d$(d)/data_$(myrank).csv", df)
-
-        print("That's it from island $(myrank)!\n")
+        if SAVE
+            CSV.write("./data/$(fname)/d$(d)/data_$(myrank).csv", df)
+        end
     end
 end
+print("That's it from island $(myrank)!\n")

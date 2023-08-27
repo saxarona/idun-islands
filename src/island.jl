@@ -52,7 +52,7 @@ function drift(S_M::DemeSelector, population, y, dest; comm=MPI.COMM_WORLD)
     end
     encoded_M = reduce(vcat, M)
     #MPI SEND TO DESTINATION
-    s_req = MPI.Isend(encoded_M, comm; dest=dest)  # Should I use tag?
+    s_req = MPI.Send(encoded_M, comm; dest=dest)  # Should I use tag?
     return M, s_req
 end
 
@@ -64,7 +64,7 @@ Adds received deme into the population. Returns the received request of MPI.
 function strand(S_M::DemeSelector, d, src; comm=MPI.COMM_WORLD)
     #MPI RECEIVE FROM SOURCE
     encoded_M = Array{Float64}(undef, S_M.k * d)
-    r_req = MPI.Irecv!(encoded_M, comm; source=src)  # Should I use tag?
+    r_req = MPI.Recv!(encoded_M, comm; source=src)  # Should I use tag?
     M = []
     for i in 1:d:length(encoded_M)
         push!(M, encoded_M[i:i+d-1])

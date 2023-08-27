@@ -5,6 +5,9 @@ using DataFrames
 
 path = "./data/"
 fs = readdir(path)
+const SAVE = false
+
+post = []
 
 #for each  function
 for eachf in fs
@@ -22,5 +25,10 @@ for eachf in fs
         end
         push!(cols, d)
     end
-    print("$eachf\n $(DataFrame(Dict(zip(dirs, cols))))\n\n")
+    tab = DataFrame(Dict(zip(dirs, cols)))
+    if SAVE
+        CSV.write("./analysis/$(eachf).csv", tab)
+    end
+    push!(post, tab)
+    print(tab)
 end

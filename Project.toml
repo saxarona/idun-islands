@@ -5,6 +5,7 @@ version = "0.0.2"
 
 [deps]
 CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 EvoLP = "71f1f4bb-392f-41f8-8452-d535d061e0f4"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"

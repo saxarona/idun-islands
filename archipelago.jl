@@ -21,7 +21,7 @@ src = mod(myrank-1, ranks)
 ds = [2, 3, 5, 10]  # dimensions
 fs = [ackley, rosenbrock, michalewicz]  # objective functions
 bounds = [(-32.768, 32.768), (-2.048, 2.048), (0, π)]
-mus = [5, 5, 10]  # migration rates
+mus = [10, 10, 5]  # migration rates
 
 ## GA operators
 n = 30  # population size

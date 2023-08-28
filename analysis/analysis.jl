@@ -30,5 +30,5 @@ for eachf in fs
         CSV.write("./analysis/$(eachf).csv", tab)
     end
     push!(post, tab)
-    print(tab)
+    print("for f=$(eachf) \n $(tab) \n")
 end

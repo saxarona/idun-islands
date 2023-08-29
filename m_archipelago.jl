@@ -66,7 +66,7 @@ for (exp_i, f) in enumerate(fs)  # for each experiment/objective function
                 achieved by $(optimizer(i_res))\n""")
         df = DataFrame(statsbook.records)
         if SAVE
-            CSV.write("./singlecore/$(fname)/d$(d)/data_$(myrank).csv", df)
+            CSV.write("./data/$(fname)/d$(d)/data_$(myrank).csv", df)
         end
     end
 end

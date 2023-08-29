@@ -52,7 +52,7 @@ function drift(S_M::DemeSelector, population, y, dest; comm=MPI.COMM_WORLD)
     end
     encoded_M = reduce(vcat, M)
     #MPI SEND TO DESTINATION
-    s_req = MPI.Send(encoded_M, comm; dest=dest)  # Should I use tag?
+    s_req = MPI.Send(encoded_M, comm; dest=dest)  # Use non-blocking for SINGLECORE
     return M, s_req
 end
 
@@ -64,7 +64,7 @@ Adds received deme into the population. Returns the received request of MPI.
 function strand(S_M::DemeSelector, d, src; comm=MPI.COMM_WORLD)
     #MPI RECEIVE FROM SOURCE
     encoded_M = Array{Float64}(undef, S_M.k * d)
-    r_req = MPI.Recv!(encoded_M, comm; source=src)  # Should I use tag?
+    r_req = MPI.Recv!(encoded_M, comm; source=src)  # Use non-blocking for SINGLECORE
     M = []
     for i in 1:d:length(encoded_M)
         push!(M, encoded_M[i:i+d-1])
@@ -128,7 +128,7 @@ function islandGA(
             # 5. Evaluate new deme
             append!(fitnesses, f.(M))  # O(max_it / μ * S_M.k)
             # push!(comm_stats, MPI.Waitall([r_req, s_req]))
-            MPI.Barrier(comm)
+            MPI.Barrier(comm)  # Remove for SINGLECORE
         end
         compute!(logbook, fitnesses)  # Save stats
 	end
@@ -138,4 +138,12 @@ function islandGA(
 	n_evals = 2 * max_it * n + n
     result = Result(best, pop[best_i], pop, max_it, n_evals)
 	return result, comm_stats  # of this island!
+end
+
+# New multi-modal, 2d-benchmark
+
+function eggholder(x::Vector{T} where {T<:Real})
+    return -(x[2] + 47) * sin(sqrt(abs(x[2] + x[1] / 2 + 47))) - x[1] * sin(
+        sqrt(abs(x[1] - (x[2] + 47)))
+    )
 end

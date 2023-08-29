@@ -15,6 +15,8 @@ export select
 export drift, strand, reinsert!
 export islandGA
 
+# Benchmarks
+export eggholder
 
 include("island.jl")
 

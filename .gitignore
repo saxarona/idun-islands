@@ -2,4 +2,4 @@ Manifest.toml
 out/
 .vscode
 job.sh
-.ipynb
+*.ipynb

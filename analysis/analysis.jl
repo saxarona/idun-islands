@@ -3,9 +3,9 @@
 using CSV
 using DataFrames
 
-path = "./data/"
+path = "./singlecore/"
 fs = readdir(path)
-const SAVE = false
+const SAVE = true
 
 post = []
 
@@ -19,7 +19,7 @@ for eachf in fs
         dfs = []
         # read eachfile
         for i in 1:64
-            push!(dfs, CSV.read("$(path)$(eachf)/$(eachdir)/data_$(i-1).csv", DataFrame))
+            push!(dfs, CSV.read("$(path)$(eachf)/$(eachdir)/data_$(i).csv", DataFrame))
             df = filter(row -> all(x -> !(x isa Number && isnan(x)), row), dfs[i])
             push!(d, minimum(skipmissing(df.minimum)))
         end
@@ -27,7 +27,7 @@ for eachf in fs
     end
     tab = DataFrame(Dict(zip(dirs, cols)))
     if SAVE
-        CSV.write("./analysis/$(eachf).csv", tab)
+        CSV.write("./analysis/$(eachf)_s.csv", tab)
     end
     push!(post, tab)
     print("for f=$(eachf) \n $(tab) \n")

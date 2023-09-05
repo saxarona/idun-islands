@@ -95,6 +95,7 @@ function islandGA(
     S_P::EvoLP.SelectionMethod,
     X::EvoLP.CrossoverMethod,
     Mut::EvoLP.MutationMethod,
+    bounds::Tuple,
     μ::Integer,
     S_M::Islands.DemeSelector,
     R_M::Islands.DemeSelector,
@@ -108,7 +109,7 @@ function islandGA(
 	for i in 1:max_it  # main loop
 		parents = EvoLP.select(S_P, f.(pop)) # O(max_it * n)
 		offspring = [cross(X, pop[p[1]], pop[p[2]]) for p in parents]
-		pop .= mutate.(Ref(Mut), offspring) # whole population is replaced
+		pop .= Islands.mutate.(Ref(Mut), offspring; bounds) # whole population is replaced
 
         fitnesses = f.(pop) # O(max_it * n)
 
@@ -140,10 +141,38 @@ function islandGA(
 	return result, comm_stats  # of this island!
 end
 
+function mutate(M::EvoLP.GaussianMutation, ind::AbstractVector;
+            rng=Random.GLOBAL_RNG,
+            bounds=none)
+    x= ind + randn(rng, length(ind)) * M.σ
+    check_problem_bounds!(x, bounds)
+    return x
+end
+
+function check_problem_bounds!(ind::AbstractVector, bounds::Tuple{Any, Any})
+    for i in eachindex(ind)
+        if ind[i] < bounds[1]
+            ind[i] = bounds[1]
+        elseif ind[i] > bounds[2]
+            ind[i] = bounds[2]
+        else
+            continue
+        end
+    end
+    return nothing
+end
+
 # New multi-modal, 2d-benchmark
 
 function eggholder(x::Vector{T} where {T<:Real})
     return -(x[2] + 47) * sin(sqrt(abs(x[2] + x[1] / 2 + 47))) - x[1] * sin(
         sqrt(abs(x[1] - (x[2] + 47)))
     )
+end
+
+function rana(x::Vector{T} where {T<:Real})
+    n = length(x)
+    return sum([x[i] * cos(sqrt(abs(x[i+1] + x[i] + 1))) * sin(sqrt(abs(x[i+1] - x[i] + 1))) +
+        (1 + x[i+1]) * sin(sqrt(abs(x[i+1] + x[i] + 1))) * cos(sqrt(abs(x[i+1] - x[i] + 1)))
+        for i in 1:n-1])
 end

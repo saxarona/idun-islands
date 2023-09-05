@@ -6,7 +6,7 @@ using OrderedCollections
 using Statistics
 import DataFrames: DataFrame
 
-const SAVE = false
+const SAVE = true
 
 function experiment(popsize, ParentSelector, Recombinator, Mutator, max_its,
             DemeSelector, Reinserter, stat_callables, stat_names,

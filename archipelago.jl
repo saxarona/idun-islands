@@ -85,4 +85,4 @@ bounds = [(-512, 512), (-512, 512)]
 mus = [10, 10]  # migration rates
 
 # 2. run
-experiment(n, S_P, X, M, max_it, S_M, R_M, statfs, statnames, ds, fs, bounds, mus; SAVE=SAVE)
+experiment(n, S_P, X, Mut, max_it, S_M, R_M, statfs, statnames, ds, fs, bounds, mus; SAVE=SAVE)

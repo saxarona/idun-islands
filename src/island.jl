@@ -165,9 +165,9 @@ end
 # New multi-modal, 2d-benchmark
 
 function eggholder(x::Vector{T} where {T<:Real})
-    return -(x[2] + 47) * sin(sqrt(abs(x[2] + x[1] / 2 + 47))) - x[1] * sin(
-        sqrt(abs(x[1] - (x[2] + 47)))
-    )
+    n = length(x)
+    return -sum([(x[i+1]+47) * sin(sqrt(abs(x[i+1] + 47 + x[i]/2))) +
+        x[i] * sin(sqrt(abs(x[i] - (x[i+1] + 47)))) for i in 1:n-1])
 end
 
 function rana(x::Vector{T} where {T<:Real})

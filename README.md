@@ -1,21 +1,67 @@
-# Islands on Idun
+# Evolutionary Computation with Islands: Extending EvoLP.jl for Parallel Computing
 
-This is a project exploring how to implement island models of genetic algorithms using Message Passing Interface (MPI) on a high performance computing cluster.
+Companion code for the paper at the 35th Norwegian ICT Conference for Research and Education.
+This paper presents an extension of [EvoLP.jl](https://github.com/ntnu-ai-lab/EvoLP.jl) and provides 3 new additional operators that can be used to set up island models of genetic algorithms in parallel machines.
 
-The project is an extension of [EvoLP.jl](https://github.com/ntnu-ai-lab/EvoLP.jl) and provides 3 new additional operators.
+## Run the model
 
-## The work flow
+Clone, activate and instantiate the environment as you would with any other Julia env.
+Then, submit `archipelago.jl` to the cluster. For example, using SLURM, it would be something like this:
 
-### Select a deme
+```bash
+#SBATCH -J test-job
+#SBATCH --account=my-hpc-account
+#SBATCH --ntasks-per-node=32        # 32 islands
+#SBATCH -c 1                        # single threaded island
+#SBATCH -t 00:05:00                 # estimated time
+#SBATCH -p CPUQ                     # HPC partition
+#SBATCH --output=out/test_%j.out    # output dump
 
-We have a new supertype: `DemeSelector` which uses `select` to choose a subset of a population (or _deme_, as it is known in biology).
-This project implements the following hierarchy of deme selector types:
+module load foss/2022a
+module load Julia/1.7.2-linux-x86_64
+
+srun julia archipelago.jl
+```
+
+## Code structure
+
+The wrapper script for a parallel run is `archipelago.jl`.
+Its single core equivalent is `singlecore.jl`.
+
+Generated data for parallel runs can be found in the `data` directory.
+Single core data is in the `singlecore` directory.
+
+Utilities for data handling and plotting can be found in the `analysis` directory.
+
+All core additions to EvoLP.jl are in the `src/island.jl` file. The components are:
+
+### Deme selection blocks
 
 - `DemeSelector`
   - `RandomDemeSelector`
   - `WorstDemeSelector`
+- `select` method for deme selection
 
-Both the random and worst deme selectors get a parameter `k` to select `k` individuals from the population using such policy.
+### Communication blocks
+
+- `drift`
+- `strand`
+- `reinsert!`
+
+### Miscellaneous components
+
+- **Mutator**: `mutate` method. Patched version of `EvoLP.mutate` but checking problem bounds (see [EvoLP's issue #69](https://github.com/ntnu-ai-lab/EvoLP.jl/issues/69))
+- **Test function**: `eggholder`
+- **Test function**: `rana`
+- **Algorithm**: `islandGA`
+
+## Using the communication blocks
+
+### Select a deme
+
+We have a new supertype: `DemeSelector`, used by the  `select` method to choose a subset of a population (or _deme_).
+
+Both the random and worst deme selectors can get a parameter `k` to select `k` individuals from the population using such policy.
 
 ### Drift away
 
@@ -27,42 +73,39 @@ It then encodes and sends the deme to the destination island.
 
 The new function `strand` handles the receiving and decoding of the population.
 
-### Reinsert
+### Reinsert!
 
 Another new function, `reinsert!`, takes the new stranded deme and adds it (in-place) to the population.
 It then returns the indices of the old deme (which should be deleted manually from your algorithm).
 
 ## Implementation and results
 
-We ported EvoLP to Julia 1.7.2 and renamed it IdunIslands.
-For simplicity, all new components (as well as a demo algorithm, `islandGA`) were added to a single file: `island.jl`.
-Members in this file are not exported, so everything needs to be accessed by `IdunIslands.WorstDemeSelector`, for  example.
-The running script is `scratch.jl` which wraps everything in a single work flow run.
+All parallel tests were carried out using Julia 1.7.2 on Idun, [NTNU’s HPC solution](https://www.hpc.ntnu.no/idun/).
 
-We tested on 8 cores (or 8 islands) using a 1-way ring topology.
-Three built-in functions were tested: `ackley`, `rosenbrock` and `michalewicz`, each on three different dimension sizes: 2, 3 and 5.
-More information about them is available at EvoLP's documentation on [benchmark functions](https://ntnu-ai-lab.github.io/EvoLP.jl/stable/man/benchmarks.html).
+We tested on 64 cores (or 64 islands) using a 1-way ring topology.
+Five built-in functions were tested:
+
+- From EvoLP.jl: `ackley`, `rosenbrock` and `michalewicz` (Test 1)
+- Available in `island.jl`: `eggholder` and `rana` (Test 2)
 
 ### Tests setup
 
 A generational GA (`islandGA`) with:
 
-- Generator: `unif_rand_vector_pop`
-- Selector: `RankBasedSelectionGenerational`
-- Recombinator: `UniformCrossover`
-- Mutator: `GaussianMutation` with `std=0.1`
-- Population size: 30
+- Generator: `EvoLP.unif_rand_vector_pop`
+- Selector: `EvoLP.RankBasedSelectionGenerational`
+- Recombinator: `EvoLP.UniformCrossover`
+- Mutator: `EvoLP.GaussianMutation` with `std=0.1`
+- Population size `popsize`: 30
 - Iterations: 100
 - Migration
   - rate: `mu` (see below)
-  - selection policy: `RandomDemeSelector`
-  - replacement policy: `WorstDemeSelector`
+  - selection policy: `RandomDemeSelector` with `k=0.1*popsize`
+  - replacement policy: `WorstDemeSelector` with `k=0.1*popsize`
 
-| param  	| ackley 	| rosenbrock 	| michalewicz 	|
-|--------	|--------	|------------	|-------------	|
-| `mu`     	| 10     	| 10         	| 5           	|
-
-Tested on Julia 1.7.2, using 2 nodes of 4 cores each on [Idun](https://www.hpc.ntnu.no/idun/).
+| param  	| ackley 	| rosenbrock 	| michalewicz 	| eggholder | rana   |
+|--------	|--------	|------------	|-------------	|-----------|--------|
+| `mu`   	| 10   	  | 10          | 5             |10         |10      |
 
 Results are available in the data folder, per function, per dimension, per island.
 These were logged using EvoLP's [statistics logbook](https://ntnu-ai-lab.github.io/EvoLP.jl/stable/man/logbook.html).

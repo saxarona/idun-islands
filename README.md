@@ -26,14 +26,14 @@ srun julia archipelago.jl
 ## Code structure
 
 The wrapper script for a parallel run is `archipelago.jl`.
-Its single core equivalent is `singlecore.jl`.
+Its serial equivalent is `singlecore.jl`.
 
 Generated data for parallel runs can be found in the `data` directory.
-Single core data is in the `singlecore` directory.
+The serial approach data is in the `singlecore` directory.
 
 Utilities for data handling and plotting can be found in the `analysis` directory.
 
-All core additions to EvoLP.jl are in the `src/island.jl` file. The components are:
+All core additions to EvoLP.jl are in the `src/island.jl` file. These added components are:
 
 ### Deme selection blocks
 
@@ -99,7 +99,7 @@ A generational GA (`islandGA`) with:
 - Population size `popsize`: 30
 - Iterations: 100
 - Migration
-  - rate: `mu` (see below)
+  - rate: `mu` (see table below)
   - selection policy: `RandomDemeSelector` with `k=0.1*popsize`
   - replacement policy: `WorstDemeSelector` with `k=0.1*popsize`
 

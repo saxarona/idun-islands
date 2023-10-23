@@ -2,6 +2,9 @@
 
 Companion code for the paper at the 35th Norwegian ICT Conference for Research and Education.
 This paper presents an extension of [EvoLP.jl](https://github.com/ntnu-ai-lab/EvoLP.jl) and provides 3 new additional operators that can be used to set up island models of genetic algorithms in parallel machines.
+Get the published version of the data and code in the [releases page](https://github.com/saxarona/idun-islands/releases/tag/v1.0.0) or through Zenodo:
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.10034436.svg)](https://doi.org/10.5281/zenodo.10034436)
 
 ## Run the model
 
